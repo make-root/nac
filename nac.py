@@ -3,23 +3,12 @@ import os
 import netifaces
 import urllib.request
 
-window = tk.Tk()
-
-labels_host = ["default_gateway", "8.8.8.8", "gooogle.com", "http://www.gooogle.com"]
-labels_status = ["", "", "", ""]
-
-gws = netifaces.gateways()
-default_gateway_line = gws["default"][netifaces.AF_INET]
-labels_host[0] = default_gateway_line[0]
-
-
-if os.sys.platform == "win32":
-    ping_param = "-n"
-else:
-    ping_param = "-c"
-
 
 def ping_host(hostname):
+    if os.sys.platform == "win32":
+        ping_param = "-n"
+    else:
+        ping_param = "-c"
     response = os.system(f"ping {ping_param} 1 {hostname}")
     if response == 0:
         return hostname + " UP"
@@ -35,19 +24,40 @@ def check_url(hostname):
         return hostname + " DOWN"
 
 
-labels_status[0] = ping_host(labels_host[0])
-labels_status[1] = ping_host(labels_host[1])
-labels_status[2] = ping_host(labels_host[2])
-labels_status[3] = check_url(labels_host[3])
+gws = netifaces.gateways()
+default_gateway_line = gws["default"][netifaces.AF_INET]
 
 
-label0 = tk.Label(text=labels_status[0])
-label0.pack()
-label1 = tk.Label(text=labels_status[1])
-label1.pack()
-label2 = tk.Label(text=labels_status[2])
-label2.pack()
-label3 = tk.Label(text=labels_status[3])
-label3.pack()
+TO_CHECK = [
+    {
+        "check_function": ping_host,
+        "params": default_gateway_line[0],
+    },
+    {
+        "check_function": ping_host,
+        "params": "8.8.8.8",
+    },
+    {
+        "check_function": ping_host,
+        "params": "gooogle.com",
+    },
+    {
+        "check_function": check_url,
+        #"params": {"args": ("http://www.gooogle.com",), "kwargs": {}},
+        "params": "http://www.gooogle.com",
+    },
+]
+
+
+# --- INTERFACE ---
+
+window = tk.Tk()
+
+for param in TO_CHECK:
+    func = param["check_function"]
+    status_txt = func(param['params'])
+    #status_txt = func( *param["params"]["args"], **param["params"]["kwargs"])
+    tk.Label(text=status_txt).pack()
+
 
 window.mainloop()
